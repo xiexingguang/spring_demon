@@ -1,0 +1,16 @@
+.settings
+.project
+.classpath
+.idea
+*.iml
+*.log
+deploy/
+*.swp
+bin/
+target/
+check.txt
+logs/
+ide-web/hsf.configuration
+.DS_Store
+*.versionsBackup
+!APP-META
