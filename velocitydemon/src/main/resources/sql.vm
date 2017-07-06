@@ -1,0 +1,94 @@
+#set($_group_id = $indParam_ids.get(0))
+#set($_cate_id = $indParam_id)
+
+##设置cate_flag的标志
+#if($indParam_level == '1')
+    #set($_cate_flag = '-1')
+    #set($_group_id='-')
+#elseif($indParam_level == '2')
+    #set($_cate_flag = '1')
+#elseif($indParam_level == '3')
+    #set($_cate_flag = '2')
+#elseif($indParam_level == '4')
+    #set($_cate_flag = '0')
+#end
+
+##flow_flag的数据,给tree.parentId的赋值
+#if($tree.level == '1')
+    #set($_flow_flag = '2')
+#elseif($tree.level == '2')
+    #set($_flow_flag = '3')
+#elseif($tree.level == '3')
+    #set($_flow_flag = '4')
+#elseif($tree.level == '4')
+    #set($_flow_flag ='5')
+#end
+
+
+#define($flow_condition_total)
+where
+stat_date='$statDate'
+and is_cut_c0='Y'
+and bc_type='c'
+and bu_id='taobao'
+##类目的判断的条件
+and cate_flag='$_cate_flag'
+and cate_id='$_cate_id'
+and group_id='$_group_id'
+##通道的判断条件
+and flow_type='prd'
+and flow_flag in ('1','2','3','4')
+    #if($tree)
+    and flow_flag='$_flow_flag'
+    and parent_flow_name='$tree.parentId'
+    #else
+    #end
+#end
+
+
+#define($flow_dim)
+stat_date as stat_date
+,flow_name as flow_id
+,flow_name as flow_name
+    #if($tree)
+    ,parent_flow_name as parent_flow_id
+    ,$tree.level as flow_level
+    #else
+    ,'-1' as parent_flow_id
+    ,'0' as flow_level
+    #end
+,case when flow_type='4' then 'Y' else 'N' end as is_flow_leaf
+#end
+
+select
+flow_name as flow_name
+,flow_name as flow_id
+,parent_flow_id as parent_flow_id
+,is_flow_leaf as is_flow_leaf
+,flow_level as flow_level
+,$selected_indicators_as
+from
+(
+select
+$flow_dim
+,ipv_1d_081
+,ipv_uv_1d_214
+,pay_ord_amt_1d_037
+,pay_ord_byr_cnt_1d_036
+,pay_ord_cnt_1d_036
+,pay_ord_itm_qty_1d_006
+,pay_ord_pbt_1d_011
+,pay_ord_pot_1d_015
+,vst_pay_byr_rate_1d_002
+,pay_ord_pit_1d_018
+,vst_itm_cnt_1d_006
+
+,case when hy_ipv_1d_081>0 then ipv_1d_081/hy_ipv_1d_081 else cast(null as double) end as hy_ipv_1d_081_rate
+,case when hy_ipv_uv_1d_214>0 then ipv_uv_1d_214/hy_ipv_uv_1d_214 else cast(null as double) end as hy_ipv_uv_1d_214_rate
+,case when hy_pay_ord_amt_1d_037>0 then pay_ord_amt_1d_037/hy_pay_ord_amt_1d_037 else cast(null as double) end as hy_pay_ord_amt_1d_037_rate
+,case when hy_pay_ord_byr_cnt_1d_036>0 then pay_ord_byr_cnt_1d_036/hy_pay_ord_byr_cnt_1d_036 else cast(null as double) end as hy_pay_ord_byr_cnt_1d_036_rate
+,pay_ord_pit_1d_018-td_pay_ord_pit_1d_018 as td_pay_ord_pit_1d_018_diff
+,case when td_vst_itm_cnt_1d_006>0 then vst_itm_cnt_1d_006/td_vst_itm_cnt_1d_006 else cast(null as double) end  as td_vst_itm_cnt_1d_006_rate
+from tb_360a_show_stapp_flow_cate_lead_di
+$flow_condition_total
+) a
